@@ -1,6 +1,6 @@
 function calculateDeliveryCost(city, weightKg) {
     const baseRate = city === "Ivano-Frankivsk" ? 50.0 : 110.0;
-    return baseRate + (weightKg * 12.0);
+    return baseRate + (weightKg * 15.0);
 }
 
 function processStandardInvoice(amount, city, weightKg, taxRate = 0.20) {
