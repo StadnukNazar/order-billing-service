@@ -1,6 +1,7 @@
 public class BillingService {
-    // Дефект 1 (Common Coupling): спільний глобальний змінний стан
-    public static double GLOBAL_TAX_RATE = 0.20;
+    // Common Coupling усунено: глобальної змінної GLOBAL_TAX_RATE більше немає.
+    // Значення за замовчуванням – незмінна константа, яку неможливо перезаписати.
+    private static final double DEFAULT_TAX_RATE = 0.20;
 
     public static class CustomerProfile {
         public int userId;
@@ -18,23 +19,28 @@ public class BillingService {
         }
     }
 
-    // Дефект 2 (Stamp Coupling): приймає повну сутність CustomerProfile заради одного поля city
-    public static double calculateDeliveryCost(CustomerProfile customer, double weightKg) {
-        double baseRate = "Ivano-Frankivsk".equals(customer.city) ? 50.0 : 110.0;
+    // Stamp Coupling усунено: лише примітивні параметри (city, weightKg)
+    public static double calculateDeliveryCost(String city, double weightKg) {
+        double baseRate = "Ivano-Frankivsk".equals(city) ? 50.0 : 110.0;
         return baseRate + (weightKg * 12.0);
     }
 
-    // Дефект 3 (Control Coupling): прапорець modeFlag керує ходом виконання методу
-    public static String processInvoice(double amount, CustomerProfile customer, double weightKg, int modeFlag) {
-        if (modeFlag == 1) {
-            double delivery = calculateDeliveryCost(customer, weightKg);
-            double total = (amount * (1 + GLOBAL_TAX_RATE)) + delivery;
-            return "PROCESSED: " + Math.round(total * 100.0) / 100.0;
-        } else if (modeFlag == 2) {
-            GLOBAL_TAX_RATE = 0.0; // Псує глобальний стан для інших потоків!
-            double total = amount + calculateDeliveryCost(customer, weightKg);
-            return "TAX_EXEMPT: " + Math.round(total * 100.0) / 100.0;
-        }
-        return "CANCELLED: 0.0";
+    // Control Coupling усунено: окремий метод замість modeFlag == 1.
+    // Ставка податку передається явно.
+    public static String processStandardInvoice(double amount, String city, double weightKg, double taxRate) {
+        double delivery = calculateDeliveryCost(city, weightKg);
+        double total = (amount * (1 + taxRate)) + delivery;
+        return "PROCESSED: " + Math.round(total * 100.0) / 100.0;
+    }
+
+    // Перевантажений метод без taxRate: викликає основний зі значенням 0.20
+    public static String processStandardInvoice(double amount, String city, double weightKg) {
+        return processStandardInvoice(amount, city, weightKg, DEFAULT_TAX_RATE);
+    }
+
+    // Control Coupling усунено: окремий метод замість modeFlag == 2
+    public static String processTaxExemptInvoice(double amount, String city, double weightKg) {
+        double total = amount + calculateDeliveryCost(city, weightKg);
+        return "TAX_EXEMPT: " + Math.round(total * 100.0) / 100.0;
     }
 }
